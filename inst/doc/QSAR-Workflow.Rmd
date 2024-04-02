@@ -1,0 +1,115 @@
+---
+title: "QSAR Workflow"
+author: "George Oche Ambrose"
+date: "3/27/2024"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{QSAR Workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(rQSAR)
+```
+# Introduction
+
+Quantitative Structure-Activity Relationship (QSAR) modeling is a valuable tool in computational chemistry and drug design, where it aims to predict the activity or property of chemical compounds based on their molecular structure. In this vignette, we present the rQSAR package, which provides functions for variable selection and QSAR modeling using Multiple Linear Regression (MLR), Partial Least Squares (PLS), and Random Forest algorithms.
+
+## Background
+
+QSAR modeling relies on mathematical models to establish relationships between molecular descriptors (features representing chemical compounds) and their corresponding biological activities or properties. MLR, PLS, and Random Forest are commonly used algorithms for QSAR modeling, each with its own strengths and applications:
+
+Multiple Linear Regression (MLR): MLR fits a linear equation to the data, allowing us to understand the linear relationship between predictors and the response variable. It is simple, interpretable, and provides insights into the importance of each predictor.
+
+Partial Least Squares (PLS): PLS is a regression technique that combines the features of principal component analysis and MLR. It is particularly useful when dealing with multicollinearity and high-dimensional data, making it suitable for QSAR modeling with correlated predictors.
+
+Random Forest: Random Forest is an ensemble learning method that builds multiple decision trees and combines their predictions to improve accuracy and reduce overfitting. It is robust to outliers and non-linear relationships, making it suitable for complex QSAR modeling tasks.
+# Basic Usage
+Generating Molecular Descriptors
+The generate_descriptors_from_sdf function can be used to generate molecular descriptors from an SDF file.
+
+```{r}
+library(rQSAR)
+
+# Path to the SDF file
+sdf_file<-sdf_file <- system.file("sample.sdf", package = "rQSAR")
+
+# Generate descriptors
+descriptors <- generate_descriptors_from_sdf(sdf_file)
+```
+
+# Variable Selection
+
+The `perform_variable_selection` function allows users to perform variable selection based on a given outcome column in a dataset. This step is crucial for identifying relevant predictors and improving the performance of QSAR models.
+
+```{r}
+descriptors<-system.file("descriptor1.csv", package = "rQSAR")
+selected_data <- perform_variable_selection(descriptors, "Outcome_column_name")
+print(head(selected_data))
+write.csv(selected_data, "descriptor2.csv")
+```
+
+
+This function reads the data from the specified CSV file, extracts predictors and the outcome variable, performs variable selection using the 'leaps' package, and returns a dataframe containing the selected variables along with the outcome.
+
+NB: The descriptors (independent variables) starts from the first column while the dependent variable should be placed in the last column. Adjust accordingly. Also, replace "D:/QSAR DATA/rQSAR/inst/descriptor1.csv" with directory where your file is located
+
+# Visualization
+We can visualize the correlation between selected variables and the outcome using the 'corrplot' package:
+```{r}
+# Load the selected data
+selected_data<-system.file("descriptor2.csv", package = "rQSAR")
+selected_data <- read.csv(selected_data, header = TRUE)
+
+# Compute the correlation matrix
+correlation_matrix <- cor(selected_data)
+
+# Plot the heatmap
+corrplot(correlation_matrix, method = "color", type = "lower", tl.col = "black", tl.srt = 45)
+```
+
+This heatmap provides insights into the correlation structure of the selected variables.
+
+NB: Replace "D:/QSAR DATA/rQSAR/inst/descriptor2.csv" with directory where your file is located
+
+# QSAR Modeling
+
+The 'build_qsar_models' function builds QSAR models using MLR, PLS, and Random Forest algorithms with k-fold cross-validation. This approach helps to assess the predictive performance of the models and generalize their performance to unseen data.
+
+```{r}
+# Example usage:
+data_file <- system.file("descriptor2.csv", package = "rQSAR")
+model_results <- build_qsar_models(data_file)
+print(model_results)
+```
+
+This function reads the data from the specified CSV file, splits it into training and testing sets, builds QSAR models using MLR, PLS, and Random Forest, and returns the model predictions along with the actual values.
+
+# Visualization
+
+We can visualize the performance of QSAR models using correlation plots and residual plots:
+
+```{r}
+# Correlation plots
+plots <- correlation_plots(model_results)
+for (i in seq_along(plots)) {
+  print(plots[[i]])
+}
+
+# Residual plots
+plots <- residual_plots(model_results)
+grid.arrange(grobs = plots, ncol = 2)
+```
+
+These plots help evaluate the predictive performance of QSAR models.
+
+# Conclusion
+In this vignette, we introduced the rQSAR package for QSAR modeling using MLR, PLS, and Random Forest algorithms. By leveraging variable selection techniques and cross-validation, users can build robust QSAR models for predicting chemical properties or activities. For further details and examples, please refer to the package documentation.
